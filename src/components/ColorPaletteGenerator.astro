@@ -31,13 +31,13 @@ declare global {
   <div id="paletteContainer"></div>
 </div>
 
-<!-- Updated copy palette button -->
+<!-- Updated download palette button -->
 <Button
-  id="copyPaletteButton"
+  id="downloadPaletteButton"
   className="fixed bottom-4 right-4"
   disabled
 >
-  Copy Palette
+  Download Palette
 </Button>
 
 <script>
@@ -155,24 +155,26 @@ function generateShades(baseOklch: { l: number, c: number, h: number }, original
   );
 }
 
-// Add this function to map hues to Tailwind color names
+// Updated function to map hues to Tailwind color names
 function getTailwindColorName(hue: number): string {
   const hueRanges = [
-    { name: 'red', range: [350, 10] },
-    { name: 'orange', range: [11, 40] },
-    { name: 'amber', range: [41, 60] },
-    { name: 'yellow', range: [61, 80] },
-    { name: 'lime', range: [81, 140] },
-    { name: 'green', range: [141, 170] },
-    { name: 'emerald', range: [171, 190] },
-    { name: 'teal', range: [191, 210] },
-    { name: 'cyan', range: [211, 230] },
-    { name: 'sky', range: [231, 250] },
-    { name: 'blue', range: [251, 270] },
-    { name: 'indigo', range: [271, 290] },
-    { name: 'violet', range: [291, 310] },
-    { name: 'purple', range: [311, 330] },
-    { name: 'fuchsia', range: [331, 349] }
+    { name: 'red', range: [355, 10] },
+    { name: 'orange', range: [11, 32] },
+    { name: 'amber', range: [33, 46] },
+    { name: 'yellow', range: [47, 60] },
+    { name: 'lime', range: [61, 80] },
+    { name: 'green', range: [81, 140] },
+    { name: 'emerald', range: [141, 160] },
+    { name: 'teal', range: [161, 180] },
+    { name: 'cyan', range: [181, 200] },
+    { name: 'sky', range: [201, 220] },
+    { name: 'blue', range: [221, 240] },
+    { name: 'indigo', range: [241, 260] },
+    { name: 'violet', range: [261, 280] },
+    { name: 'purple', range: [281, 300] },
+    { name: 'fuchsia', range: [301, 320] },
+    { name: 'pink', range: [321, 340] },
+    { name: 'rose', range: [341, 354] }
   ];
 
   const normalizedHue = (hue + 360) % 360;
@@ -197,11 +199,11 @@ const generatePalette = () => {
     Math.abs(hue - baseOklch.h) < Math.abs(hues[closest] - baseOklch.h) ? index : closest
   , 0);
 
-  // Reorder hues to put the closest hue first
+  // Reorder hues to put the closest hue first and the rest in consecutive order
   const reorderedHues = [
     hues[closestHueIndex],
-    ...hues.slice(0, closestHueIndex),
-    ...hues.slice(closestHueIndex + 1)
+    ...hues.slice(closestHueIndex + 1),
+    ...hues.slice(0, closestHueIndex)
   ];
 
   const paletteData = reorderedHues.map((hue, index) => {
@@ -209,40 +211,37 @@ const generatePalette = () => {
     const hueHex = index === 0 ? hexColor : oklchToHex(hueOklch);
     const colorName = getTailwindColorName(hue);
     const shades = generateShades(hueOklch, hueHex);
-    return { name: colorName, shades };
+    return { name: colorName, shades, hue };
   });
 
-  // Store the palette data in a global variable
-  window.generatedPalette = paletteData;
+  // Store the palette data in a global variable with the new format
+  window.generatedPalette = paletteData.reduce<Record<string, any>>((acc, color) => {
+    acc[color.name] = color.shades;
+    return acc;
+  }, {});
 
   const paletteHTML = `
     <Card>
       <CardHeader>
-        <CardTitle>Generated Palette</CardTitle>
       </CardHeader>
       <CardContent>
-        ${reorderedHues.map((hue, index) => {
-          const hueOklch = { ...baseOklch, h: hue };
-          const hueHex = index === 0 ? hexColor : oklchToHex(hueOklch);
-          const colorName = getTailwindColorName(hue);
-          return `
-            <div class="mb-4">
-              <h3 class="font-semibold mb-2">${colorName}${index === 0 ? ' (Original Color)' : ''}</h3>
-              <div class="flex w-full">
-                ${Object.entries(generateShades(hueOklch, hueHex)).map(([shade, color]) => `
-                  <div class="flex-1 text-center">
-                    <div
-                      class="h-8 mb-1"
-                      style="background-color: ${color};"
-                    ></div>
-                    <p class="text-xs font-semibold">${shade}</p>
-                    <p class="text-xs">${color}</p>
-                  </div>
-                `).join('')}
-              </div>
+        ${paletteData.map((color, index) => `
+          <div class="mb-4">
+            <h3 class="font-semibold mb-2">${color.name}${index === 0 ? ' (original color row)' : ''}</h3>
+            <div class="flex w-full">
+              ${Object.entries(color.shades).map(([shade, shadeColor]) => `
+                <div class="flex-1 text-center">
+                  <div
+                    class="h-8 mb-1"
+                    style="background-color: ${shadeColor};"
+                  ></div>
+                  <p class="text-xs font-semibold">${shade}</p>
+                  <p class="text-xs">${shadeColor}</p>
+                </div>
+              `).join('')}
             </div>
-          `;
-        }).join('')}
+          </div>
+        `).join('')}
       </CardContent>
     </Card>
   `;
@@ -252,30 +251,34 @@ const generatePalette = () => {
     paletteContainer.innerHTML = paletteHTML;
   }
 
-  // Enable the copy palette button after generating the palette
-  const copyPaletteButton = document.getElementById('copyPaletteButton') as HTMLButtonElement;
-  if (copyPaletteButton) {
-    copyPaletteButton.disabled = false;
+  // Enable the download palette button after generating the palette
+  const downloadPaletteButton = document.getElementById('downloadPaletteButton') as HTMLButtonElement;
+  if (downloadPaletteButton) {
+    downloadPaletteButton.disabled = false;
   }
 };
 
-// Modified function to copy the palette to clipboard
-const copyPaletteToClipboard = () => {
+// Modified function to download the palette as a JSON file
+const downloadPaletteAsJSON = () => {
   if (window.generatedPalette) {
     const paletteJSON = JSON.stringify(window.generatedPalette, null, 2);
-    navigator.clipboard.writeText(paletteJSON).then(() => {
-      alert('Palette copied to clipboard!');
-    }).catch(err => {
-      console.error('Failed to copy palette: ', err);
-    });
+    const blob = new Blob([paletteJSON], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'color-palette.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 };
 
 // Add event listener to the generate button
 document.getElementById('generateButton')?.addEventListener('click', generatePalette);
 
-// Add event listener to the copy palette button
-document.getElementById('copyPaletteButton')?.addEventListener('click', copyPaletteToClipboard);
+// Add event listener to the download palette button
+document.getElementById('downloadPaletteButton')?.addEventListener('click', downloadPaletteAsJSON);
 
 // Add event listeners for color picker and hex input synchronization
 const colorPicker = document.getElementById('colorPicker') as HTMLInputElement;
@@ -294,5 +297,5 @@ hexInput?.addEventListener('input', (e) => {
 });
 
 // Add this line to ensure the button starts as disabled
-document.getElementById('copyPaletteButton')?.setAttribute('disabled', 'true');
+document.getElementById('downloadPaletteButton')?.setAttribute('disabled', 'true');
 </script>
