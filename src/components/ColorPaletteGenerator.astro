@@ -10,6 +10,11 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
   <h1 class="text-2xl font-bold mb-4">Color Palette Generator</h1>
   <div class="flex gap-2 mb-4">
     <Input
+      type="color"
+      id="colorPicker"
+      className="w-12 h-10 p-0 border-0 rounded-md overflow-hidden"
+    />
+    <Input
       type="text"
       id="hexColor"
       placeholder="Enter HEX color (e.g., #FF5733)"
@@ -182,4 +187,20 @@ const generatePalette = () => {
 
 // Add event listener to the generate button
 document.getElementById('generateButton')?.addEventListener('click', generatePalette);
+
+// Add event listeners for color picker and hex input synchronization
+const colorPicker = document.getElementById('colorPicker') as HTMLInputElement;
+const hexInput = document.getElementById('hexColor') as HTMLInputElement;
+
+colorPicker?.addEventListener('input', (e) => {
+  const selectedColor = (e.target as HTMLInputElement).value;
+  hexInput.value = selectedColor;
+});
+
+hexInput?.addEventListener('input', (e) => {
+  const enteredColor = (e.target as HTMLInputElement).value;
+  if (/^#[0-9A-Fa-f]{6}$/.test(enteredColor)) {
+    colorPicker.value = enteredColor;
+  }
+});
 </script>
