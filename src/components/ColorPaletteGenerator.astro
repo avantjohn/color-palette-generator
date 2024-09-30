@@ -107,45 +107,71 @@ const oklchToHex = (oklch: { l: number, c: number, h: number }): string => {
   return rgbToHex(rgb);
 };
 
-// Helper function to generate shades
-function generateShades(baseOklch: { l: number, c: number, h: number }): { [key: number]: string } {
+// Modified function to generate shades
+function generateShades(baseOklch: { l: number, c: number, h: number }, originalHex: string): { [key: number]: string } {
   const shades = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
   const lightnesses = [0.97, 0.94, 0.86, 0.78, 0.70, 0.61, 0.52, 0.43, 0.34, 0.25];
+
+  const originalRgb = hexToRgb(originalHex);
+  const originalOklch = rgbToOklch(originalRgb);
+  
+  const closestShadeIndex = lightnesses.reduce((closest, l, index) => 
+    Math.abs(l - originalOklch.l) < Math.abs(lightnesses[closest] - originalOklch.l) ? index : closest
+  , 0);
 
   return Object.fromEntries(
     shades.map((shade, index) => [
       shade,
-      oklchToHex({ l: lightnesses[index], c: baseOklch.c, h: baseOklch.h })
+      index === closestShadeIndex ? originalHex : oklchToHex({ l: lightnesses[index], c: baseOklch.c, h: baseOklch.h })
     ])
   );
 }
 
-// Function to generate and display the palette
+// Modified function to generate and display the palette
 const generatePalette = () => {
   const hexColor = (document.getElementById('hexColor') as HTMLInputElement)?.value || '';
   const baseOklch = hexToOklch(hexColor);
-  const palette = generateShades(baseOklch);
+  
+  // Generate 17 hues evenly distributed across the 360-degree spectrum
+  const hues = Array.from({ length: 17 }, (_, i) => (i * 360 / 17) % 360);
+  
+  // Find the closest hue to the original color
+  const closestHueIndex = hues.reduce((closest, hue, index) => 
+    Math.abs(hue - baseOklch.h) < Math.abs(hues[closest] - baseOklch.h) ? index : closest
+  , 0);
+
+  // Reorder hues to put the closest hue first
+  const reorderedHues = [
+    hues[closestHueIndex],
+    ...hues.slice(0, closestHueIndex),
+    ...hues.slice(closestHueIndex + 1)
+  ];
 
   const paletteHTML = `
-    <div class="card">
-      <div class="card-header">
-        <h2 class="card-title">Generated Palette</h2>
-      </div>
-      <div class="card-content">
-        <div class="grid grid-cols-5 gap-4">
-          ${Object.entries(palette).map(([shade, color]) => `
-            <div class="text-center">
-              <div
-                class="w-16 h-16 mx-auto mb-2 rounded"
-                style="background-color: ${color};"
-              ></div>
-              <p class="font-semibold">${shade}</p>
-              <p class="text-sm">${color}</p>
+    <Card>
+      <CardHeader>
+        <CardTitle>Generated Palette</CardTitle>
+      </CardHeader>
+      <CardContent>
+        ${reorderedHues.map((hue, index) => `
+          <div class="mb-4">
+            <h3 class="font-semibold mb-2">Hue: ${Math.round(hue)}°${index === 0 ? ' (Original Color)' : ''}</h3>
+            <div class="flex w-full">
+              ${Object.entries(generateShades({ ...baseOklch, h: hue }, index === 0 ? hexColor : '#000000')).map(([shade, color]) => `
+                <div class="flex-1 text-center">
+                  <div
+                    class="h-8 mb-1"
+                    style="background-color: ${color};"
+                  ></div>
+                  <p class="text-xs font-semibold">${shade}</p>
+                  <p class="text-xs">${color}</p>
+                </div>
+              `).join('')}
             </div>
-          `).join('')}
-        </div>
-      </div>
-    </div>
+          </div>
+        `).join('')}
+      </CardContent>
+    </Card>
   `;
 
   const paletteContainer = document.getElementById('paletteContainer');
