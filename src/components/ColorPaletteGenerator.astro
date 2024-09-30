@@ -1,0 +1,89 @@
+---
+// ColorPaletteGenerator.astro
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+
+---
+
+<div class="p-4 max-w-4xl mx-auto">
+  <h1 class="text-2xl font-bold mb-4">Color Palette Generator</h1>
+  <div class="flex gap-2 mb-4">
+    <Input
+      type="text"
+      id="hexColor"
+      placeholder="Enter HEX color (e.g., #FF5733)"
+    />
+    <Button id="generateButton">Generate Palette</Button>
+  </div>
+  <div id="paletteContainer"></div>
+</div>
+
+<script>
+    // Helper function to convert HEX to OKLCH
+const hexToOklch = (hex: string) => {
+  // This is a placeholder function. In a real application, you'd use a color conversion library.
+  // For demonstration purposes, we'll return dummy OKLCH values.
+  return { l: 0.5, c: 0.1, h: 180 };
+};
+
+// Helper function to generate shades
+const generateShades = (baseOklch: any) => {
+  // This is a simplified version. In a real application, you'd use more sophisticated algorithms.
+  const shades = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
+  return shades.map(shade => ({
+    shade,
+    oklch: {
+      l: baseOklch.l * (1 + (shade - 500) / 1000),
+      c: baseOklch.c,
+      h: baseOklch.h
+    }
+  }));
+};
+
+// Helper function to convert OKLCH to HEX
+const oklchToHex = (oklch: any) => {
+  // This is a placeholder function. In a real application, you'd use a color conversion library.
+  return '#CCCCCC';
+};
+
+// Function to generate and display the palette
+const generatePalette = () => {
+  const hexColor = (document.getElementById('hexColor') as HTMLInputElement)?.value || '';
+  const baseOklch = hexToOklch(hexColor);
+  const palette = generateShades(baseOklch);
+
+  const paletteHTML = `
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Generated Palette</h2>
+      </div>
+      <div class="card-content">
+        <div class="grid grid-cols-5 gap-4">
+          ${palette.map(({ shade, oklch }) => `
+            <div class="text-center">
+              <div
+                class="w-16 h-16 mx-auto mb-2 rounded"
+                style="background-color: ${oklchToHex(oklch)};"
+              ></div>
+              <p class="font-semibold">${shade}</p>
+              <p class="text-sm">
+                L: ${oklch.l.toFixed(2)}, C: ${oklch.c.toFixed(2)}, H: ${oklch.h.toFixed(0)}
+              </p>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+
+  const paletteContainer = document.getElementById('paletteContainer');
+  if (paletteContainer) {
+    paletteContainer.innerHTML = paletteHTML;
+  }
+};
+
+// Add event listener to the generate button
+document.getElementById('generateButton')?.addEventListener('click', generatePalette);
+  // You can add client-side JavaScript here if needed
+</script>
